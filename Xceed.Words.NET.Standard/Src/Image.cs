@@ -84,9 +84,8 @@ namespace Xceed.Words.NET
       string start = temp.Remove( temp.LastIndexOf( '/' ) );
       string end = _pr.TargetUri.OriginalString;
       string full = end.Contains( start ) ? end : start + "/" + end;
-    
-        _document._package.Flush();
 
+       _document._package.Flush();
       return ( new PackagePartStream( _document._package.GetPart( new Uri( full, UriKind.Relative ) ).GetStream( mode, access ) ) );
     }
 

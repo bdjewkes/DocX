@@ -11,7 +11,7 @@
    pick up Xceed Words for .NET at https://xceed.com/xceed-words-for-net/
 
   ***********************************************************************************/
-
+ 
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1597,57 +1597,56 @@ namespace Xceed.Words.NET
         {
           switch( packagePart.Uri.ToString() )
           {
-            case "/word/document.xml":
-              documentPart = packagePart;
-              using( XmlReader xr = XmlReader.Create( packagePart.GetStream( FileMode.Open, FileAccess.Read ) ) )
-              {
-                documentDoc = XDocument.Load( xr );
-              }
-              break;
-            case "/_rels/.rels":
-              if( !_package.PartExists( packagePart.Uri ) )
-              {
-                _package.CreatePart( packagePart.Uri, packagePart.ContentType, packagePart.CompressionOption );
-              }
-              var globalRelsPart = _package.GetPart( packagePart.Uri );
-              using(
-                var tr = new StreamReader(
-                  packagePart.GetStream( FileMode.Open, FileAccess.Read ), Encoding.UTF8 ) )
-              {
-                using(
-                  var tw = new StreamWriter(
-                    new PackagePartStream( globalRelsPart.GetStream( FileMode.Create, FileAccess.Write ) ), Encoding.UTF8 ) )
-                {
-                  tw.Write( tr.ReadToEnd() );
-                }
-              }
-              break;
-            case "/word/_rels/document.xml.rels":
-              break;
-            default:
-              if( !_package.PartExists( packagePart.Uri ) )
-              {
-                _package.CreatePart( packagePart.Uri, packagePart.ContentType, packagePart.CompressionOption );
-              }
-              var packagePartEncoding = Encoding.Default;
-              if( packagePart.Uri.ToString().EndsWith( ".xml" ) || packagePart.Uri.ToString().EndsWith( ".rels" ) )
-              {
-                packagePartEncoding = Encoding.UTF8;
-              }
-              var nativePart = _package.GetPart( packagePart.Uri );
-              using(
-                var tr = new StreamReader(
-                  packagePart.GetStream( FileMode.Open, FileAccess.Read ), packagePartEncoding ) )
-              {
-                using(
-                  var tw = new StreamWriter(
-                    new PackagePartStream( nativePart.GetStream( FileMode.Create, FileAccess.Write ) ), tr.CurrentEncoding ) )
-                {
-                  tw.Write( tr.ReadToEnd() );
-                }
-              }
-              break;
-          }
+                        case "/word/document.xml":
+                            documentPart = packagePart;
+                            using (var ps = packagePart.GetStream(FileMode.Open, FileAccess.Read))
+                            {
+                                using (XmlReader xr = XmlReader.Create(ps))
+                                {
+                                    documentDoc = XDocument.Load(xr);
+                                }
+                            }
+                            break;
+                        case "/_rels/.rels":
+                            if (!_package.PartExists(packagePart.Uri))
+                            {
+                                _package.CreatePart(packagePart.Uri, packagePart.ContentType, packagePart.CompressionOption);
+                            }
+                            var globalRelsPart = _package.GetPart(packagePart.Uri);
+                            using (var ps = packagePart.GetStream(FileMode.Open, FileAccess.Read))
+                            using (var tr = new StreamReader(ps, Encoding.UTF8))
+                            {
+                                using (var pps = new PackagePartStream(globalRelsPart.GetStream(FileMode.Create, FileAccess.Write)))
+                                using (var tw = new StreamWriter(pps, Encoding.UTF8))
+                                {
+                                    tw.Write(tr.ReadToEnd());
+                                }
+                            }
+                            break;
+                        case "/word/_rels/document.xml.rels":
+                            break;
+                        default:
+                            if (!_package.PartExists(packagePart.Uri))
+                            {
+                                _package.CreatePart(packagePart.Uri, packagePart.ContentType, packagePart.CompressionOption);
+                            }
+                            var packagePartEncoding = Encoding.Default;
+                            if (packagePart.Uri.ToString().EndsWith(".xml") || packagePart.Uri.ToString().EndsWith(".rels"))
+                            {
+                                packagePartEncoding = Encoding.UTF8;
+                            }
+                            var nativePart = _package.GetPart(packagePart.Uri);
+                            using (var ps = packagePart.GetStream(FileMode.Open, FileAccess.Read))
+                            using (var tr = new StreamReader(ps, packagePartEncoding))
+                            {
+                                using (var np = new PackagePartStream(nativePart.GetStream(FileMode.Create, FileAccess.Write)))
+                                using (var tw = new StreamWriter(np, tr.CurrentEncoding))
+                                {
+                                    tw.Write(tr.ReadToEnd());
+                                }
+                            }
+                            break;
+                    }
         }
         if( documentPart != null )
         {
