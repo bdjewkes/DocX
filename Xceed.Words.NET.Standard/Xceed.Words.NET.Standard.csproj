@@ -8,6 +8,10 @@
     <Authors>Xceed, William Tulloch</Authors>
     <Company />
     <Description>.Net Standard 2.0 version of Xceed's Words.NET</Description>
+    <PackageReleaseNotes>This version will only work on Windows due to the inclusion of Windows.Identity</PackageReleaseNotes>
+    <PackageTags>Xceed.Words.NET, .Net Standard</PackageTags>
+    <Version>1.0.3-beta</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>

@@ -30,7 +30,7 @@ namespace Xceed.Words.NET
     /// <summary>
     /// Represents a document.
     /// </summary>
-   public class DocX : Container, IDisposable
+    public class DocX : Container, IDisposable
     {
         #region Namespaces
         internal static XNamespace w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
@@ -947,6 +947,15 @@ namespace Xceed.Words.NET
                 else
                 {
                     var packagePart = clonePackagePart(remote_pp);
+
+                    void PartAction(PackagePart pp, Action<TextReader> action)
+                    {
+                        using (var stream = pp.GetStream())
+                        using (TextReader tr = new StreamReader(stream))
+                        {
+                            action(tr);
+                        }
+                    }
                     switch (remote_pp.ContentType)
                     {
                         case "application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml":
@@ -964,26 +973,23 @@ namespace Xceed.Words.NET
 
                         case "application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml":
                             _stylesPart = packagePart;
-                            using (TextReader tr = new StreamReader(_stylesPart.GetStream()))
-                                _styles = XDocument.Load(tr);
+
+                            PartAction(_stylesPart, tr => _styles = XDocument.Load(tr));
                             break;
 
                         case "application/vnd.ms-word.stylesWithEffects+xml":
                             _stylesWithEffectsPart = packagePart;
-                            using (TextReader tr = new StreamReader(_stylesWithEffectsPart.GetStream()))
-                                _stylesWithEffects = XDocument.Load(tr);
+                            PartAction(_stylesWithEffectsPart,tr => _stylesWithEffects = XDocument.Load(tr) );
                             break;
 
                         case "application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml":
                             _fontTablePart = packagePart;
-                            using (TextReader tr = new StreamReader(_fontTablePart.GetStream()))
-                                _fontTable = XDocument.Load(tr);
+                            PartAction(_fontTablePart, tr => _fontTable = XDocument.Load(tr));
                             break;
 
                         case "application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml":
                             _numberingPart = packagePart;
-                            using (TextReader tr = new StreamReader(_numberingPart.GetStream()))
-                                _numbering = XDocument.Load(tr);
+                            PartAction(_numberingPart, tr => _numbering = XDocument.Load(tr));
                             break;
 
                     }
@@ -1549,8 +1555,8 @@ namespace Xceed.Words.NET
                                 _package.CreatePart(packagePart.Uri, packagePart.ContentType, packagePart.CompressionOption);
                             }
                             var globalRelsPart = _package.GetPart(packagePart.Uri);
-                            using( var ps = packagePart.GetStream(FileMode.Open, FileAccess.Read))
-                            using ( var tr = new StreamReader(ps, Encoding.UTF8))
+                            using (var ps = packagePart.GetStream(FileMode.Open, FileAccess.Read))
+                            using (var tr = new StreamReader(ps, Encoding.UTF8))
                             {
                                 using (var pps = new PackagePartStream(globalRelsPart.GetStream(FileMode.Create, FileAccess.Write)))
                                 using (var tw = new StreamWriter(pps, Encoding.UTF8))
@@ -2123,7 +2129,7 @@ namespace Xceed.Words.NET
                         fs.Write(_memoryStream.ToArray(), 0, (int)_memoryStream.Length);
                 }
             }
-            
+
             else if (_stream.CanSeek)  //Check if stream can be seeked to support System.Web.HttpResponseStream.
             {
                 // Set the length of this stream to 0
@@ -3632,37 +3638,47 @@ namespace Xceed.Words.NET
             return null;
         }
 
-        private void merge_images(PackagePart remote_pp, DocX remote_document, XDocument remote_mainDoc, String contentType)
+        private void
+            merge_images(PackagePart remote_pp, DocX remote_document, XDocument remote_mainDoc, String contentType)
         {
             // Before doing any other work, check to see if this image is actually referenced in the document.
             // In my testing I have found cases of Images inside documents that are not referenced
-            var remote_rel = remote_document.PackagePart.GetRelationships().Where(r => r.TargetUri.OriginalString.Equals(remote_pp.Uri.OriginalString.Replace("/word/", ""))).FirstOrDefault();
+            var remote_rel = remote_document.PackagePart.GetRelationships().FirstOrDefault(r => r.TargetUri.OriginalString.Equals(remote_pp.Uri.OriginalString.Replace("/word/", "")));
             if (remote_rel == null)
             {
-                remote_rel = remote_document.PackagePart.GetRelationships().Where(r => r.TargetUri.OriginalString.Equals(remote_pp.Uri.OriginalString)).FirstOrDefault();
+                remote_rel = remote_document.PackagePart.GetRelationships().FirstOrDefault(r => r.TargetUri.OriginalString.Equals(remote_pp.Uri.OriginalString));
                 if (remote_rel == null)
                     return;
             }
 
             var remote_Id = remote_rel.Id;
+            string remote_hash;
+            using (var stream = remote_pp.GetStream())
+            {
+                remote_hash = ComputeMD5HashString(stream);
+            }
 
-            var remote_hash = this.ComputeMD5HashString(remote_pp.GetStream());
             var image_parts = _package.GetParts().Where(pp => pp.ContentType.Equals(contentType));
 
             bool found = false;
             foreach (var part in image_parts)
             {
-                var local_hash = ComputeMD5HashString(part.GetStream());
+                string local_hash;
+                using (var stream = part.GetStream())
+                {
+                    local_hash = ComputeMD5HashString(stream);
+                }
+                    
                 if (local_hash.Equals(remote_hash))
                 {
                     // This image already exists in this document.
                     found = true;
 
-                    var local_rel = this.PackagePart.GetRelationships().Where(r => r.TargetUri.OriginalString.Equals(part.Uri.OriginalString.Replace("/word/", ""))).FirstOrDefault();
+                    var local_rel = this.PackagePart.GetRelationships().FirstOrDefault(r => r.TargetUri.OriginalString.Equals(part.Uri.OriginalString.Replace("/word/", "")));
 
                     if (local_rel == null)
                     {
-                        local_rel = this.PackagePart.GetRelationships().Where(r => r.TargetUri.OriginalString.Equals(part.Uri.OriginalString)).FirstOrDefault();
+                        local_rel = this.PackagePart.GetRelationships().FirstOrDefault(r => r.TargetUri.OriginalString.Equals(part.Uri.OriginalString));
                     }
 
                     if (local_rel != null)
@@ -4375,11 +4391,11 @@ namespace Xceed.Words.NET
 
         internal void ProcessPackagePart(PackagePart part, Action<TextWriter> action, FileMode fileMode = FileMode.Create, FileAccess fileAccess = FileAccess.Write)
         {
-           
-                using (TextWriter tw = new StreamWriter(new PackagePartStream(part.GetStream(fileMode, fileAccess))))
-                {
-                    action(tw);
-                }
+
+            using (TextWriter tw = new StreamWriter(new PackagePartStream(part.GetStream(fileMode, fileAccess))))
+            {
+                action(tw);
+            }
         }
 
         /// <summary>
