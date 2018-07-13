@@ -2,7 +2,6 @@
 
 DocX is a .NET library that allows developers to manipulate Word 2007/2010/2013 files, in an easy and intuitive manner. DocX is fast, lightweight and best of all it does not require Microsoft Word or Office to be installed.
 
-**NOTE:** There is a new Master branch as of Oct. 3, 2017. Please read about the [Classic branch](../../wiki/Classic-Branch) if you were using this project before the change.
 
 ## DocX Author
 
@@ -10,9 +9,13 @@ DocX is the free, open source version of [Xceed Words for .NET](https://xceed.co
 
 Currently, the only difference between DocX and Xceed Words for .NET, is that Xceed Words for .NET can convert a Word document to PDF, and has professional technical support included in the subscription.  
 
+## About this version
+
+This is a port of the original DocX that has been updated to target .NET Standard 2.0. To limit any changes to the original code base this will currently only work for on Windows OS due to an existing dependency on Windows.Identity.
+
 ## What else do I need?
 
-All that you need to install in order to use DocX is the [.NET framework 4.0](http://www.microsoft.com/downloads/en/details.aspx?FamilyID=9cfb2d51-5ff4-4491-b0e5-b386f32c0992&displaylang=en) and [Visual Studio 2010](http://www.microsoft.com/express/Downloads/) or later, both of which are free.
+All that you need to install in order to use DocX Standard is .NET Core 2.1 or greater and [Visual Studio 2017](http://www.microsoft.com/express/Downloads/) or later, both of which are free.
 
 ## What are the main features of DocX?
 
